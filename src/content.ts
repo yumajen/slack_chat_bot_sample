@@ -1,0 +1,122 @@
+function isBlockedTopic_(text: string): boolean {
+  const ng = [
+    "政治",
+    "選挙",
+    "宗教",
+    "差別",
+    "誹謗中傷",
+    "医療",
+    "診断",
+    "薬",
+    "法律",
+    "訴訟",
+    "投資",
+    "株",
+    "FX",
+    "仮想通貨",
+    "ニュース",
+    "事件",
+  ];
+  return ng.some((w) => (text || "").includes(w));
+}
+
+function generateDailyTopic_(): string {
+  const systemText =
+    "あなたは社内Slackの雑談促進bot。安全で答えやすいお題を作る。";
+  const userText = [
+    "今日の雑談お題を1つだけ作ってください。",
+    "条件:",
+    "- 正解・不正解がない",
+    "- 個人の体験・好みで答えられる",
+    "- 政治/宗教/医療/法律/投資/ニュース解説は避ける",
+    "- 15〜40文字（短すぎ禁止）",
+    "- 日本語",
+    "出力は「お題文のみ」（前置き・箇条書き禁止）",
+  ].join("\n");
+
+  let topic = geminiGenerateText_(systemText, userText, {
+    temperature: 0.9,
+    maxOutputTokens: 256,
+    thinkingLevel: "minimal",
+  })
+    .replace(/[\r\n]+/g, " ")
+    .trim();
+
+  if (topic.length < 10) {
+    const retryText =
+      userText + "\n\n短すぎる出力は禁止です。必ず15文字以上で出してください。";
+    topic = geminiGenerateText_(systemText, retryText, {
+      temperature: 0.9,
+      maxOutputTokens: 256,
+      thinkingLevel: "minimal",
+    })
+      .replace(/[\r\n]+/g, " ")
+      .trim();
+  }
+
+  if (topic.length < 10) topic = "最近ちょっと気分転換になったことは？";
+  return topic;
+}
+
+function generateReply_(userText: string): string {
+  const systemText = [
+    "あなたは社内Slackの雑談bot。",
+    "安全で軽い返答だけをする。",
+    "やること: 共感 or 乗っかる一言 + 質問は1つまで。",
+    "禁止: 政治/宗教/医療/法律/投資助言、ニュース解説、断定的事実、個人攻撃。",
+    "制約: 1〜2文、80〜180文字（短すぎ禁止）。",
+  ].join("\n");
+
+  const prompt = [
+    "次の投稿に雑談として返事を作ってください。",
+    "条件: 共感＋質問1つまで / 日本語 / 80〜180文字 / 前置き不要",
+    "",
+    "投稿:",
+    userText,
+  ].join("\n");
+
+  let reply = geminiGenerateText_(systemText, prompt, {
+    temperature: 0.7,
+    maxOutputTokens: 1024,
+    thinkingLevel: "minimal",
+  })
+    .replace(/[\r\n]+/g, " ")
+    .trim();
+
+  if (reply.length < 20) {
+    const retryPrompt =
+      prompt + "\n\n短すぎる出力は禁止です。必ず80文字以上で返答してください。";
+    reply = geminiGenerateText_(systemText, retryPrompt, {
+      temperature: 0.7,
+      maxOutputTokens: 1024,
+      thinkingLevel: "minimal",
+    })
+      .replace(/[\r\n]+/g, " ")
+      .trim();
+  }
+
+  if (reply.length < 20)
+    reply = "いいですね！もう少し詳しく聞いてもいいですか？🙂";
+  return reply.slice(0, 220);
+}
+
+function postDailyTopic(): void {
+  // Weekday guard (Mon-Fri)
+  const day = new Date().getDay();
+  if (day === 0 || day === 6) return;
+
+  const channel = getProp_("TARGET_CHANNEL_ID");
+  if (!channel) throw new Error("TARGET_CHANNEL_ID is missing");
+
+  let topic = "最近ちょっと気分転換になったことは？";
+  try {
+    topic = generateDailyTopic_();
+  } catch {
+    // keep fallback
+  }
+
+  const text = `【今日のお題】${topic}\n短文OK／読むだけOK。返信はこのスレッドへどうぞ。`;
+  const ts = slackChatPost_(channel, text);
+
+  setProp_(`TODAY_TOPIC_TS_${todayYmd_()}`, ts || "");
+}

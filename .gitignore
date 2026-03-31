@@ -1,0 +1,15 @@
+node_modules/
+.DS_Store
+
+# clasp
+.clasp.json
+
+# ローカル設定系
+.env
+.env.*
+
+# logs
+*.log
+
+# VSCode
+.vscode/
