@@ -9,8 +9,8 @@ function handleMention_(event) {
         slackChatPost_(channel, "今日はどんな話題にしますか？", threadTs);
         return;
     }
-    if (isBlockedTopic_(cleaned)) {
-        slackChatPost_(channel, "このチャンネルではその話題には反応できません。雑談向けの話題でお願いします🙂", threadTs);
+    if (!judgeTopicByGemini_(cleaned)) {
+        slackChatPost_(channel, "⚠️このチャンネルではその話題には反応できません。雑談向けの話題でお願いします😵", threadTs);
         return;
     }
     let reply = "いいですね！もう少し詳しく聞いてもいいですか？🙂";
@@ -37,8 +37,10 @@ function handleMessage_(event) {
     const userText = (event.text || "").trim();
     if (!userText)
         return;
-    if (isBlockedTopic_(userText))
+    if (!judgeTopicByGemini_(userText)) {
+        slackChatPost_(channel, "⚠️このチャンネルではその話題には反応できません。雑談向けの話題でお願いします😵", threadTs);
         return;
+    }
     let reply = "いいですね！もう少し詳しく聞いてもいいですか？🙂";
     try {
         reply = generateReply_(userText);
