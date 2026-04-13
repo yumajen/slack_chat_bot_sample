@@ -10,10 +10,10 @@ function handleMention_(event: SlackEvent): void {
     return;
   }
 
-  if (isBlockedTopic_(cleaned)) {
+  if (!judgeTopicByGemini_(cleaned)) {
     slackChatPost_(
       channel,
-      "このチャンネルではその話題には反応できません。雑談向けの話題でお願いします🙂",
+      "⚠️このチャンネルではその話題には反応できません。雑談向けの話題でお願いします😵",
       threadTs,
     );
     return;
@@ -43,7 +43,14 @@ function handleMessage_(event: SlackEvent): void {
   const userText = (event.text || "").trim();
   if (!userText) return;
 
-  if (isBlockedTopic_(userText)) return;
+  if (!judgeTopicByGemini_(userText)) {
+    slackChatPost_(
+      channel,
+      "⚠️このチャンネルではその話題には反応できません。雑談向けの話題でお願いします😵",
+      threadTs,
+    );
+    return;
+  }
 
   let reply = "いいですね！もう少し詳しく聞いてもいいですか？🙂";
   try {

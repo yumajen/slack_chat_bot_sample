@@ -1,23 +1,21 @@
 "use strict";
+// NGなトピックのキーワードリスト。これらを含む投稿は避ける。
+const ng = [
+    "政治",
+    "選挙",
+    "宗教",
+    "差別",
+    "医療",
+    "薬",
+    "法律",
+    "訴訟",
+    "投資",
+    "事件",
+];
+function generateNgTopicString_() {
+    return ng.map((w) => `「${w}」`).join(", ");
+}
 function isBlockedTopic_(text) {
-    const ng = [
-        "政治",
-        "選挙",
-        "宗教",
-        "差別",
-        "誹謗中傷",
-        "医療",
-        "診断",
-        "薬",
-        "法律",
-        "訴訟",
-        "投資",
-        "株",
-        "FX",
-        "仮想通貨",
-        "ニュース",
-        "事件",
-    ];
     return ng.some((w) => (text || "").includes(w));
 }
 function generateDailyTopic_() {
@@ -27,7 +25,7 @@ function generateDailyTopic_() {
         "条件:",
         "- 正解・不正解がない",
         "- 個人の体験・好みで答えられる",
-        "- 政治/宗教/医療/法律/投資/ニュース解説は避ける",
+        `- ${generateNgTopicString_()}は避ける`,
         "- 15〜40文字（短すぎ禁止）",
         "- 日本語",
         "出力は「お題文のみ」（前置き・箇条書き禁止）",
@@ -57,8 +55,9 @@ function generateReply_(userText) {
     const systemText = [
         "あなたは社内Slackの雑談bot。",
         "安全で軽い返答だけをする。",
+        "禁止条件に関わると判断される投稿には反応しない。",
         "やること: 共感 or 乗っかる一言 + 質問は1つまで。",
-        "禁止: 政治/宗教/医療/法律/投資助言、ニュース解説、断定的事実、個人攻撃。",
+        `禁止: ${generateNgTopicString_()}に関する話題、断定的事実、個人攻撃。`,
         "制約: 1〜2文、80〜180文字（短すぎ禁止）。",
     ].join("\n");
     const prompt = [
@@ -107,4 +106,59 @@ function postDailyTopic() {
     const text = `【今日のお題】${topic}\n短文OK／読むだけOK。返信はこのスレッドへどうぞ。`;
     const ts = slackChatPost_(channel, text);
     setProp_(`TODAY_TOPIC_TS_${todayYmd_()}`, ts || "");
+}
+// ユーザの投稿がNGトピックに該当するかどうかをGeminiに判定させる
+function judgeTopicByGemini_(text) {
+    const systemText = [
+        "あなたは社内Slackの雑談botの安全判定を行う分類器です。",
+        "入力された投稿が、社内の軽い雑談として扱ってよいかを判定してください。",
+        "次の話題はNGです。",
+        `- ${generateNgTopicString_()}に関する話題`,
+        "- 個人攻撃、誹謗中傷、強い対立を招く話題",
+        "- 専門的助言が必要な話題",
+        "",
+        "OKにする例:",
+        "- 軽い感想",
+        "- 日常の雑談",
+        "- 趣味や食べ物の話",
+        "- 抽象的で深刻でない言及",
+        "",
+        "NGにする例:",
+        "- 政治的主張や政治に関わる選挙の話",
+        "- 宗教の勧誘や信条の議論",
+        "- 病気、診断、薬、治療の相談",
+        "- 法律相談、訴訟相談",
+        "- 投資判断、株やFXや仮想通貨の売買助言",
+        "- ニュースや事件の論評",
+        "",
+        "出力は必ずJSONのみ。",
+        '形式: {"allowed": true} または {"allowed": false}',
+    ].join("\n");
+    const userText = [
+        "次の投稿が社内雑談botで返答してよい内容か判定してください。",
+        "",
+        "投稿:",
+        text,
+    ].join("\n");
+    const raw = geminiGenerateText_(systemText, userText, {
+        temperature: 0,
+        maxOutputTokens: 128,
+        thinkingLevel: "minimal",
+    }).trim();
+    try {
+        const cleaned = raw.replace(/```json|```/g, "").trim();
+        const result = JSON.parse(cleaned);
+        setProp_("DEBUG_LAST_NG_RESULT", JSON.stringify({
+            time: new Date().toISOString(),
+            input: text,
+            raw: raw,
+            parsed: result,
+            allowed: result.allowed === true,
+        }));
+        return result.allowed === true;
+    }
+    catch {
+        // 解析失敗時は安全側に倒す
+        return false;
+    }
 }
