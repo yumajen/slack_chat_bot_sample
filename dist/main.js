@@ -53,26 +53,33 @@ function doPost(e) {
         subtype: slackEvent.subtype,
         bot_id: slackEvent.bot_id,
     }));
-    // Channel guard
+    // AI雑談チャンネル以外のイベントは無視する
     if (!targetChannelId || event.channel !== targetChannelId)
         return ok_();
-    // Prevent loops: ignore bot messages / bot events
+    // bot_idがあるイベントはBot自身が発したものなので無視する
     if (event.bot_id)
         return ok_();
-    // ignore many message subtypes safely（必要なら増やす）
+    // Slackのmessageイベントにはsubtypeというフィールドがあり、通常のメッセージはsubtypeがなく、それ以外の特殊メッセージはsubtypeが存在する。
+    // 特殊メッセージはsubtype=thread_broadcast以外は全て無視する。
+    // thread_broadcastは「チャンネルにも表示」をチェックして投稿したメッセージであり、通常のmessageイベントと同様にbotの応答対象とする。
     if (event.subtype && event.subtype !== "thread_broadcast")
         return ok_();
     // Deduplicate Slack retries (same event_id can be delivered multiple times)
+    //
     if (payload.event_id && isDuplicateEvent_(payload.event_id))
         return ok_();
     if (payload.event_id)
         rememberEvent_(payload.event_id);
-    // Dispatch
+    // botに対してメンション投稿があった場合の処理
     if (event.type === "app_mention") {
         handleMention_(event);
         return ok_();
     }
+    // お題のスレッドへの返信があった場合の処理
     if (event.type === "message") {
+        // 二重投稿になってしまうので、お題スレッド内でのメンション投稿（<@...>の形式）に対しては処理を行わない
+        if (/<@[^>]+>/.test(event.text || ""))
+            return ok_();
         handleMessage_(event);
         return ok_();
     }
