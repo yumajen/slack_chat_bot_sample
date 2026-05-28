@@ -75,9 +75,9 @@ function doPost(e) {
         handleMention_(event);
         return ok_();
     }
-    // お題のスレッドへの返信があった場合の処理
+    // お題スレッドへの返信があった場合の処理
     if (event.type === "message") {
-        // 二重投稿になってしまうので、お題スレッド内でのメンション投稿（<@...>の形式）に対しては処理を行わない
+        // お題スレッド内でのメンション投稿（<@...>の形式）に対して処理を行わないことでbotの二重投稿を防止する
         if (/<@[^>]+>/.test(event.text || ""))
             return ok_();
         handleMessage_(event);

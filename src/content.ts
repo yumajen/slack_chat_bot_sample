@@ -98,7 +98,7 @@ function generateReply_(userText: string): string {
 
   if (reply.length < 20)
     reply = "いいですね！もう少し詳しく聞いてもいいですか？🙂";
-  return reply.slice(0, 220);
+  return reply.slice(0, 500);
 }
 
 function postDailyTopic(): void {
