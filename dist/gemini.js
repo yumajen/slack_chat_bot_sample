@@ -1,14 +1,17 @@
 "use strict";
+/**
+ * Gemini APIを呼び出してテキスト生成する関数
+ * Vertex AIのGeminiモデルを呼び出してテキスト生成を行う。
+ */
 function geminiGenerateText_(systemText, userText, opts = {}) {
     var _a;
-    const apiKey = getProp_("GEMINI_API_KEY");
-    if (!apiKey)
-        throw new Error("GEMINI_API_KEY is missing");
-    const model = opts.model || getProp_("GEMINI_MODEL") || "gemini-3-flash-preview";
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-    const thinkingLevel = opts.thinkingLevel ||
-        getProp_("GEMINI_THINKING_LEVEL") ||
-        "minimal";
+    const projectId = getProp_("GCP_PROJECT_ID");
+    if (!projectId)
+        throw new Error("GCP_PROJECT_ID is missing");
+    const location = getProp_("VERTEX_LOCATION") || "us-central1";
+    const model = opts.model || getProp_("GEMINI_MODEL") || "gemini-2.5-flash"; // 2024-06-12現在のデフォルトモデル（まずは安定優先）
+    const url = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}` +
+        `/locations/${location}/publishers/google/models/${encodeURIComponent(model)}:generateContent`;
     const makePayload = (maxOut) => {
         var _a, _b;
         return ({
@@ -22,26 +25,7 @@ function geminiGenerateText_(systemText, userText, opts = {}) {
                 temperature: (_a = opts.temperature) !== null && _a !== void 0 ? _a : 0.8,
                 topP: (_b = opts.topP) !== null && _b !== void 0 ? _b : 0.9,
                 maxOutputTokens: maxOut,
-                thinkingConfig: { thinkingLevel },
             },
-            safetySettings: [
-                {
-                    category: "HARM_CATEGORY_HARASSMENT",
-                    threshold: "BLOCK_MEDIUM_AND_ABOVE",
-                },
-                {
-                    category: "HARM_CATEGORY_HATE_SPEECH",
-                    threshold: "BLOCK_MEDIUM_AND_ABOVE",
-                },
-                {
-                    category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                    threshold: "BLOCK_MEDIUM_AND_ABOVE",
-                },
-                {
-                    category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-                    threshold: "BLOCK_MEDIUM_AND_ABOVE",
-                },
-            ],
         });
     };
     const call_ = (maxOut) => {
@@ -49,6 +33,9 @@ function geminiGenerateText_(systemText, userText, opts = {}) {
         const res = UrlFetchApp.fetch(url, {
             method: "post",
             contentType: "application/json; charset=utf-8",
+            headers: {
+                Authorization: `Bearer ${ScriptApp.getOAuthToken()}`,
+            },
             payload: JSON.stringify(makePayload(maxOut)),
             muteHttpExceptions: true,
         });

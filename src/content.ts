@@ -16,10 +16,9 @@ function generateNgTopicString_(): string {
   return ng.map((w) => `「${w}」`).join(", ");
 }
 
-function isBlockedTopic_(text: string): boolean {
-  return ng.some((w) => (text || "").includes(w));
-}
-
+/**
+ * Gemini APIを呼び出して每日のお題を生成する
+ */
 function generateDailyTopic_(): string {
   const systemText =
     "あなたは社内Slackの雑談促進bot。安全で答えやすいお題を作る。";
@@ -58,6 +57,9 @@ function generateDailyTopic_(): string {
   return topic;
 }
 
+/**
+ *  ユーザの投稿に対してGeminiに返答を生成させる
+ */
 function generateReply_(userText: string): string {
   const systemText = [
     "あなたは社内Slackの雑談bot。",
@@ -98,11 +100,14 @@ function generateReply_(userText: string): string {
 
   if (reply.length < 20)
     reply = "いいですね！もう少し詳しく聞いてもいいですか？🙂";
-  return reply.slice(0, 220);
+  return reply.slice(0, 500);
 }
 
+/**
+ * 毎日のお題を投稿する
+ */
 function postDailyTopic(): void {
-  // Weekday guard (Mon-Fri)
+  // 土日は投稿しない
   const day = new Date().getDay();
   if (day === 0 || day === 6) return;
 
@@ -122,7 +127,10 @@ function postDailyTopic(): void {
   setProp_(`TODAY_TOPIC_TS_${todayYmd_()}`, ts || "");
 }
 
-// ユーザの投稿がNGトピックに該当するかどうかをGeminiに判定させる
+/**
+ * ユーザの投稿がNGトピックに該当するかどうかをGeminiに判定させる
+ * 返り値: OKならtrue、NGならfalse
+ */
 function judgeTopicByGemini_(text: string): boolean {
   const systemText = [
     "あなたは社内Slackの雑談botの安全判定を行う分類器です。",
