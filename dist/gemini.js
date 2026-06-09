@@ -5,13 +5,22 @@
  */
 function geminiGenerateText_(systemText, userText, opts = {}) {
     var _a;
-    const projectId = getProp_("GCP_PROJECT_ID");
+    const projectId = getProp_(PROP.GCP_PROJECT_ID);
     if (!projectId)
         throw new Error("GCP_PROJECT_ID is missing");
-    const location = getProp_("VERTEX_LOCATION") || "us-central1";
-    const model = opts.model || getProp_("GEMINI_MODEL") || "gemini-2.5-flash"; // 2024-06-12現在のデフォルトモデル（まずは安定優先）
+    const location = getProp_(PROP.VERTEX_LOCATION) || "us-central1";
+    const model = opts.model || getProp_(PROP.GEMINI_MODEL) || "gemini-2.5-flash";
     const url = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}` +
         `/locations/${location}/publishers/google/models/${encodeURIComponent(model)}:generateContent`;
+    const thinkingBudget = opts.thinkingLevel === "minimal"
+        ? 0
+        : opts.thinkingLevel === "low"
+            ? 1024
+            : opts.thinkingLevel === "medium"
+                ? 4096
+                : opts.thinkingLevel === "high"
+                    ? 8192
+                    : undefined;
     const makePayload = (maxOut) => {
         var _a, _b;
         return ({
@@ -25,6 +34,9 @@ function geminiGenerateText_(systemText, userText, opts = {}) {
                 temperature: (_a = opts.temperature) !== null && _a !== void 0 ? _a : 0.8,
                 topP: (_b = opts.topP) !== null && _b !== void 0 ? _b : 0.9,
                 maxOutputTokens: maxOut,
+                ...(thinkingBudget !== undefined && {
+                    thinkingConfig: { thinkingBudget },
+                }),
             },
         });
     };
@@ -40,7 +52,7 @@ function geminiGenerateText_(systemText, userText, opts = {}) {
             muteHttpExceptions: true,
         });
         const body = res.getContentText();
-        setProp_("DEBUG_LAST_GEMINI", body);
+        setProp_(PROP.DEBUG_LAST_GEMINI, body);
         const data = JSON.parse(body || "{}");
         const cand = (_a = data.candidates) === null || _a === void 0 ? void 0 : _a[0];
         const text = ((_c = (_b = cand === null || cand === void 0 ? void 0 : cand.content) === null || _b === void 0 ? void 0 : _b.parts) !== null && _c !== void 0 ? _c : [])

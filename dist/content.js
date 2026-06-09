@@ -99,7 +99,7 @@ function postDailyTopic() {
     const day = new Date().getDay();
     if (day === 0 || day === 6)
         return;
-    const channel = getProp_("TARGET_CHANNEL_ID");
+    const channel = getProp_(PROP.TARGET_CHANNEL_ID);
     if (!channel)
         throw new Error("TARGET_CHANNEL_ID is missing");
     let topic = "最近ちょっと気分転換になったことは？";
@@ -111,7 +111,7 @@ function postDailyTopic() {
     }
     const text = `【今日のお題】${topic}\n短文OK／読むだけOK。返信はこのスレッドへどうぞ。`;
     const ts = slackChatPost_(channel, text);
-    setProp_(`TODAY_TOPIC_TS_${todayYmd_()}`, ts || "");
+    setProp_(topicTsKey_(), ts || "");
 }
 /**
  * ユーザの投稿がNGトピックに該当するかどうかをGeminiに判定させる
@@ -157,7 +157,7 @@ function judgeTopicByGemini_(text) {
     try {
         const cleaned = raw.replace(/```json|```/g, "").trim();
         const result = JSON.parse(cleaned);
-        setProp_("DEBUG_LAST_NG_RESULT", JSON.stringify({
+        setProp_(PROP.DEBUG_LAST_NG_RESULT, JSON.stringify({
             time: new Date().toISOString(),
             input: text,
             raw: raw,

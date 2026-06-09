@@ -7,17 +7,28 @@ function geminiGenerateText_(
   userText: string,
   opts: GeminiGenerateOpts = {},
 ): string {
-  const projectId = getProp_("GCP_PROJECT_ID");
+  const projectId = getProp_(PROP.GCP_PROJECT_ID);
   if (!projectId) throw new Error("GCP_PROJECT_ID is missing");
 
-  const location = getProp_("VERTEX_LOCATION") || "us-central1";
+  const location = getProp_(PROP.VERTEX_LOCATION) || "us-central1";
 
-  const model = opts.model || getProp_("GEMINI_MODEL") || "gemini-2.5-flash"; // 2024-06-12現在のデフォルトモデル（まずは安定優先）
+  const model = opts.model || getProp_(PROP.GEMINI_MODEL) || "gemini-2.5-flash";
   const url =
     `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}` +
     `/locations/${location}/publishers/google/models/${encodeURIComponent(
       model,
     )}:generateContent`;
+
+  const thinkingBudget =
+    opts.thinkingLevel === "minimal"
+      ? 0
+      : opts.thinkingLevel === "low"
+        ? 1024
+        : opts.thinkingLevel === "medium"
+          ? 4096
+          : opts.thinkingLevel === "high"
+            ? 8192
+            : undefined;
 
   const makePayload = (maxOut: number) => ({
     contents: [
@@ -30,6 +41,9 @@ function geminiGenerateText_(
       temperature: opts.temperature ?? 0.8,
       topP: opts.topP ?? 0.9,
       maxOutputTokens: maxOut,
+      ...(thinkingBudget !== undefined && {
+        thinkingConfig: { thinkingBudget },
+      }),
     },
   });
 
@@ -53,7 +67,7 @@ function geminiGenerateText_(
     });
 
     const body = res.getContentText();
-    setProp_("DEBUG_LAST_GEMINI", body);
+    setProp_(PROP.DEBUG_LAST_GEMINI, body);
 
     const data = JSON.parse(body || "{}") as GeminiResponse;
     const cand = data.candidates?.[0];

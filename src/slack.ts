@@ -11,7 +11,7 @@ function slackChatPost_(
   text: string,
   threadTs?: string,
 ): string | null {
-  const token = getProp_("SLACK_BOT_TOKEN");
+  const token = getProp_(PROP.SLACK_BOT_TOKEN);
   if (!token) throw new Error("SLACK_BOT_TOKEN is missing");
 
   const url = "https://slack.com/api/chat.postMessage";
@@ -38,7 +38,7 @@ function slackChatPost_(
   });
 
   const body = res.getContentText();
-  setProp_("DEBUG_LAST_SLACK", body);
+  setProp_(PROP.DEBUG_LAST_SLACK, body);
 
   const data = JSON.parse(body || "{}") as {
     ok?: boolean;
