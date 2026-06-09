@@ -3,6 +3,9 @@
  * chat.postMessageを呼び出してSlackにメッセージを投稿する
  * threadTs を指定するとスレッド返信になる
  * 返り値として ts を返す（親投稿時に保存するため）
+ *
+ * Slack APIのpostMessageの仕様については以下を参照
+ * https://docs.slack.dev/reference/methods/chat.postMessage/
  */
 function slackChatPost_(channel, text, threadTs) {
     const token = getProp_("SLACK_BOT_TOKEN");
@@ -14,6 +17,7 @@ function slackChatPost_(channel, text, threadTs) {
         text,
         mrkdwn: true,
     };
+    // threadTsがあればスレッド返信のリクエストになるようにする
     if (threadTs)
         req.thread_ts = threadTs;
     const res = UrlFetchApp.fetch(url, {

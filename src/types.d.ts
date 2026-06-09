@@ -1,6 +1,8 @@
-// src/types.ts
-// このファイルは「型だけ」を全体に配るためのもの。
-// module: none でも確実に全ファイルから参照できるように declare global を使う。
+/**
+ * src/types.ts
+ * このファイルは「型だけ」を全体に配るためのもの。
+ * module: none でも確実に全ファイルから参照できるように declare global を使う。
+ */
 
 declare global {
   type SlackEnvelopeType = "url_verification" | "event_callback";

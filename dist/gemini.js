@@ -1,4 +1,8 @@
 "use strict";
+/**
+ * Gemini APIを呼び出してテキスト生成する関数
+ * Vertex AIのGeminiモデルを呼び出してテキスト生成を行う。
+ */
 function geminiGenerateText_(systemText, userText, opts = {}) {
     var _a;
     const projectId = getProp_("GCP_PROJECT_ID");
@@ -8,10 +12,6 @@ function geminiGenerateText_(systemText, userText, opts = {}) {
     const model = opts.model || getProp_("GEMINI_MODEL") || "gemini-2.5-flash"; // 2024-06-12現在のデフォルトモデル（まずは安定優先）
     const url = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}` +
         `/locations/${location}/publishers/google/models/${encodeURIComponent(model)}:generateContent`;
-    // const thinkingLevel: GeminiThinkingLevel =
-    //   opts.thinkingLevel ||
-    //   (getProp_("GEMINI_THINKING_LEVEL") as GeminiThinkingLevel) ||
-    //   "minimal";
     const makePayload = (maxOut) => {
         var _a, _b;
         return ({
@@ -25,26 +25,7 @@ function geminiGenerateText_(systemText, userText, opts = {}) {
                 temperature: (_a = opts.temperature) !== null && _a !== void 0 ? _a : 0.8,
                 topP: (_b = opts.topP) !== null && _b !== void 0 ? _b : 0.9,
                 maxOutputTokens: maxOut,
-                // thinkingConfig: { thinkingLevel },
             },
-            // safetySettings: [
-            //   {
-            //     category: "HARM_CATEGORY_HARASSMENT",
-            //     threshold: "BLOCK_MEDIUM_AND_ABOVE",
-            //   },
-            //   {
-            //     category: "HARM_CATEGORY_HATE_SPEECH",
-            //     threshold: "BLOCK_MEDIUM_AND_ABOVE",
-            //   },
-            //   {
-            //     category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            //     threshold: "BLOCK_MEDIUM_AND_ABOVE",
-            //   },
-            //   {
-            //     category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-            //     threshold: "BLOCK_MEDIUM_AND_ABOVE",
-            //   },
-            // ],
         });
     };
     const call_ = (maxOut) => {

@@ -1,3 +1,7 @@
+/**
+ * Gemini APIを呼び出してテキスト生成する関数
+ * Vertex AIのGeminiモデルを呼び出してテキスト生成を行う。
+ */
 function geminiGenerateText_(
   systemText: string,
   userText: string,

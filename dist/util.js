@@ -1,4 +1,10 @@
 "use strict";
+function setProp_(key, value) {
+    PropertiesService.getScriptProperties().setProperty(key, String(value));
+}
+function getProp_(key) {
+    return PropertiesService.getScriptProperties().getProperty(key);
+}
 /**
  * 現在日時の年月日を取得し、yyyyMMdd形式で返す関数
  */

@@ -33,11 +33,14 @@ function handleMessage_(event: SlackEvent): void {
   const channel = event.channel;
   if (!channel) return;
 
+  // 今日のお題スレッドのtsを取得する
   const topicTs = getProp_(`TODAY_TOPIC_TS_${todayYmd_()}`);
   if (!topicTs) return;
 
+  // スレッドの親メッセージID（thread_ts）を取得
   const threadTs = event.thread_ts;
   if (!threadTs) return;
+  // 今日のお題スレッドへの投稿かどうかを判定し、違うスレッドへの投稿なら無視する
   if (threadTs !== topicTs) return;
 
   const userText = (event.text || "").trim();
