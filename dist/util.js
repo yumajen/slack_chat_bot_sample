@@ -25,6 +25,9 @@ function setProp_(key, value) {
 function getProp_(key) {
     return PropertiesService.getScriptProperties().getProperty(key);
 }
+function deleteProp_(key) {
+    PropertiesService.getScriptProperties().deleteProperty(key);
+}
 function topicTsKey_() {
     return `${PROP.TODAY_TOPIC_TS_PREFIX}${todayYmd_()}`;
 }

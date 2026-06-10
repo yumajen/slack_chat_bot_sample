@@ -125,6 +125,18 @@ function postDailyTopic(): void {
   const ts = slackChatPost_(channel, text);
 
   setProp_(topicTsKey_(), ts || "");
+  purgeOldTopicTs_();
+}
+
+/**
+ * 古いお題のtsを削除する
+ */
+function purgeOldTopicTs_(): void {
+  const todayKey = topicTsKey_();
+  const all = PropertiesService.getScriptProperties().getProperties();
+  Object.keys(all)
+    .filter((k) => k.startsWith(PROP.TODAY_TOPIC_TS_PREFIX) && k !== todayKey)
+    .forEach((k) => deleteProp_(k));
 }
 
 /**

@@ -27,6 +27,10 @@ function getProp_(key: string): string | null {
   return PropertiesService.getScriptProperties().getProperty(key);
 }
 
+function deleteProp_(key: string): void {
+  PropertiesService.getScriptProperties().deleteProperty(key);
+}
+
 function topicTsKey_(): string {
   return `${PROP.TODAY_TOPIC_TS_PREFIX}${todayYmd_()}`;
 }
