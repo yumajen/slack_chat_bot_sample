@@ -34,7 +34,7 @@ function handleMessage_(event: SlackEvent): void {
   if (!channel) return;
 
   // 今日のお題スレッドのtsを取得する
-  const topicTs = getProp_(`TODAY_TOPIC_TS_${todayYmd_()}`);
+  const topicTs = getProp_(topicTsKey_());
   if (!topicTs) return;
 
   // スレッドの親メッセージID（thread_ts）を取得

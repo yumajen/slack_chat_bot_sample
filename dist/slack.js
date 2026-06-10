@@ -8,7 +8,7 @@
  * https://docs.slack.dev/reference/methods/chat.postMessage/
  */
 function slackChatPost_(channel, text, threadTs) {
-    const token = getProp_("SLACK_BOT_TOKEN");
+    const token = getProp_(PROP.SLACK_BOT_TOKEN);
     if (!token)
         throw new Error("SLACK_BOT_TOKEN is missing");
     const url = "https://slack.com/api/chat.postMessage";
@@ -28,7 +28,7 @@ function slackChatPost_(channel, text, threadTs) {
         muteHttpExceptions: true,
     });
     const body = res.getContentText();
-    setProp_("DEBUG_LAST_SLACK", body);
+    setProp_(PROP.DEBUG_LAST_SLACK, body);
     const data = JSON.parse(body || "{}");
     if (!data.ok)
         throw new Error(`Slack chat.postMessage failed: ${body}`);

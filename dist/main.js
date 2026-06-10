@@ -10,7 +10,7 @@ function doPost(e) {
         payload = JSON.parse(raw);
     }
     catch {
-        setProp_("DEBUG_LAST_BAD_JSON", raw);
+        setProp_(PROP.DEBUG_LAST_BAD_JSON, raw);
         return ok_();
     }
     // Slack URL verification
@@ -29,9 +29,9 @@ function doPost(e) {
         return ok_();
     const slackEvent = event;
     // 投稿対象となるチャンネルIDを環境変数から取得
-    const targetChannelId = getProp_("TARGET_CHANNEL_ID");
+    const targetChannelId = getProp_(PROP.TARGET_CHANNEL_ID);
     // デバッグ用として、受け取ったイベントの内容をスクリプトプロパティに保存する
-    setProp_("DEBUG_LAST_EVENT", JSON.stringify({
+    setProp_(PROP.DEBUG_LAST_EVENT, JSON.stringify({
         envelope_type: payload.type,
         event_id: payload.event_id,
         event_type: slackEvent.type,
@@ -77,7 +77,7 @@ function doPost(e) {
  * イベントの重複を検出して記憶するためのヘルパー
  */
 function isDuplicateEvent_(eventId) {
-    const s = getProp_("SEEN_EVENT_IDS") || "";
+    const s = getProp_(PROP.SEEN_EVENT_IDS) || "";
     if (!s)
         return false;
     const arr = s.split(",").filter(Boolean);
@@ -88,11 +88,11 @@ function isDuplicateEvent_(eventId) {
  * 最新のものから順にカンマ区切りで保存し、古いものは削除する。
  */
 function rememberEvent_(eventId) {
-    const max = Number(getProp_("SEEN_EVENT_IDS_MAX") || "50");
-    const s = getProp_("SEEN_EVENT_IDS") || "";
+    const max = Number(getProp_(PROP.SEEN_EVENT_IDS_MAX) || "50");
+    const s = getProp_(PROP.SEEN_EVENT_IDS) || "";
     const arr = s ? s.split(",").filter(Boolean) : [];
     arr.push(eventId);
     // keep last max
     const trimmed = arr.slice(Math.max(0, arr.length - max));
-    setProp_("SEEN_EVENT_IDS", trimmed.join(","));
+    setProp_(PROP.SEEN_EVENT_IDS, trimmed.join(","));
 }
