@@ -119,8 +119,11 @@ function postDailyTopic() {
     }
     const text = `【今日のお題】${topic}\n短文OK／読むだけOK。返信はこのスレッドへどうぞ。`;
     const ts = slackChatPost_(channel, text);
-    setProp_(topicTsKey_(), ts || "");
-    purgeOldTopicTs_();
+    // 空文字列を書くと当日の返信が全て無視されるため、tsが取得できた場合のみ保存する
+    if (ts) {
+        setProp_(topicTsKey_(), ts);
+        purgeOldTopicTs_();
+    }
 }
 /**
  * 古いお題のtsを削除する

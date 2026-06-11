@@ -34,7 +34,11 @@ function doPost(
   // 投稿対象となるチャンネルIDを環境変数から取得
   const targetChannelId = getProp_(PROP.TARGET_CHANNEL_ID);
 
+  // AI雑談チャンネル以外のイベントは無視する
+  if (!targetChannelId || event.channel !== targetChannelId) return ok_();
+
   // デバッグ用として、受け取ったイベントの内容をスクリプトプロパティに保存する
+  // チャンネルガードの後に置くことで、対象チャンネルのイベントのみ記録する
   setProp_(
     PROP.DEBUG_LAST_EVENT,
     JSON.stringify({
@@ -49,9 +53,6 @@ function doPost(
       bot_id: slackEvent.bot_id,
     }),
   );
-
-  // AI雑談チャンネル以外のイベントは無視する
-  if (!targetChannelId || event.channel !== targetChannelId) return ok_();
   // bot_idがあるイベントはBot自身が発したものなので無視する
   if (event.bot_id) return ok_();
 

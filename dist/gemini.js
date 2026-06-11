@@ -52,7 +52,6 @@ function geminiGenerateText_(systemText, userText, opts = {}) {
             muteHttpExceptions: true,
         });
         const body = res.getContentText();
-        setProp_(PROP.DEBUG_LAST_GEMINI, body);
         const data = JSON.parse(body || "{}");
         const cand = (_a = data.candidates) === null || _a === void 0 ? void 0 : _a[0];
         const text = ((_c = (_b = cand === null || cand === void 0 ? void 0 : cand.content) === null || _b === void 0 ? void 0 : _b.parts) !== null && _c !== void 0 ? _c : [])

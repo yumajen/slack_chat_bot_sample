@@ -67,8 +67,6 @@ function geminiGenerateText_(
     });
 
     const body = res.getContentText();
-    setProp_(PROP.DEBUG_LAST_GEMINI, body);
-
     const data = JSON.parse(body || "{}") as GeminiResponse;
     const cand = data.candidates?.[0];
     const text = (cand?.content?.parts ?? [])
