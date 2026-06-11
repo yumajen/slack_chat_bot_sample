@@ -2,13 +2,16 @@
  * chat.postMessageを呼び出してSlackにメッセージを投稿する
  * threadTs を指定するとスレッド返信になる
  * 返り値として ts を返す（親投稿時に保存するため）
+ *
+ * Slack APIのpostMessageの仕様については以下を参照
+ * https://docs.slack.dev/reference/methods/chat.postMessage/
  */
 function slackChatPost_(
   channel: string,
   text: string,
   threadTs?: string,
 ): string | null {
-  const token = getProp_("SLACK_BOT_TOKEN");
+  const token = getProp_(PROP.SLACK_BOT_TOKEN);
   if (!token) throw new Error("SLACK_BOT_TOKEN is missing");
 
   const url = "https://slack.com/api/chat.postMessage";
@@ -23,6 +26,7 @@ function slackChatPost_(
     text,
     mrkdwn: true,
   };
+  // threadTsがあればスレッド返信のリクエストになるようにする
   if (threadTs) req.thread_ts = threadTs;
 
   const res = UrlFetchApp.fetch(url, {
@@ -34,7 +38,7 @@ function slackChatPost_(
   });
 
   const body = res.getContentText();
-  setProp_("DEBUG_LAST_SLACK", body);
+  setProp_(PROP.DEBUG_LAST_SLACK, body);
 
   const data = JSON.parse(body || "{}") as {
     ok?: boolean;

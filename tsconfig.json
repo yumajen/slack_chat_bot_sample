@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2019",
     "lib": ["ES2019"],
-    "module": "none",
+    "module": "none", // 全体をGAS向けにグローバル関数として扱う
     "types": ["google-apps-script"],
     "outDir": "dist",
     "rootDir": "src",

@@ -1,6 +1,8 @@
-// src/types.ts
-// このファイルは「型だけ」を全体に配るためのもの。
-// module: none でも確実に全ファイルから参照できるように declare global を使う。
+/**
+ * src/types.ts
+ * このファイルは「型だけ」を全体に配るためのもの。
+ * module: none でも確実に全ファイルから参照できるように declare global を使う。
+ */
 
 declare global {
   type SlackEnvelopeType = "url_verification" | "event_callback";
@@ -31,6 +33,10 @@ declare global {
     maxOutputTokens?: number;
     thinkingLevel?: GeminiThinkingLevel;
   };
+
+  type JudgeAndReplyResult =
+    | { allowed: true; reply: string }
+    | { allowed: false };
 }
 
 // これにより「このファイル自体」はモジュール扱いになるが、declare global があるので型は全体に出る

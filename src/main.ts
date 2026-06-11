@@ -1,18 +1,4 @@
 /**
- * GASプロパティに指定のキーで値を保存する
- */
-function setProp_(key: string, value: unknown): void {
-  PropertiesService.getScriptProperties().setProperty(key, String(value));
-}
-
-/**
- * GASプロパティから指定のキーの値を取得する
- */
-function getProp_(key: string): string | null {
-  return PropertiesService.getScriptProperties().getProperty(key);
-}
-
-/**
  * Slack Events APIのリクエストを処理するエントリポイント
  */
 function doPost(
@@ -24,7 +10,7 @@ function doPost(
   try {
     payload = JSON.parse(raw) as SlackEventCallbackPayload;
   } catch {
-    setProp_("DEBUG_LAST_BAD_JSON", raw);
+    setProp_(PROP.DEBUG_LAST_BAD_JSON, raw);
     return ok_();
   }
 
@@ -45,11 +31,16 @@ function doPost(
   // eventがない場合は何もしない
   if (!event) return ok_();
   const slackEvent = event;
-  const targetChannelId = getProp_("TARGET_CHANNEL_ID");
+  // 投稿対象となるチャンネルIDを環境変数から取得
+  const targetChannelId = getProp_(PROP.TARGET_CHANNEL_ID);
 
-  // Debug snapshot (proof it arrived)
+  // AI雑談チャンネル以外のイベントは無視する
+  if (!targetChannelId || event.channel !== targetChannelId) return ok_();
+
+  // デバッグ用として、受け取ったイベントの内容をスクリプトプロパティに保存する
+  // チャンネルガードの後に置くことで、対象チャンネルのイベントのみ記録する
   setProp_(
-    "DEBUG_LAST_EVENT",
+    PROP.DEBUG_LAST_EVENT,
     JSON.stringify({
       envelope_type: payload.type,
       event_id: payload.event_id,
@@ -62,26 +53,28 @@ function doPost(
       bot_id: slackEvent.bot_id,
     }),
   );
-
-  // Channel guard
-  if (!targetChannelId || event.channel !== targetChannelId) return ok_();
-
-  // Prevent loops: ignore bot messages / bot events
+  // bot_idがあるイベントはBot自身が発したものなので無視する
   if (event.bot_id) return ok_();
-  // ignore many message subtypes safely（必要なら増やす）
+
+  // Slackのmessageイベントにはsubtypeというフィールドがあり、通常のメッセージはsubtypeがなく、それ以外の特殊メッセージはsubtypeが存在する。
+  // 特殊メッセージはsubtype=thread_broadcast以外は全て無視する。
+  // thread_broadcastは「チャンネルにも表示」をチェックして投稿したメッセージであり、通常のmessageイベントと同様にbotの応答対象とする。
   if (event.subtype && event.subtype !== "thread_broadcast") return ok_();
 
-  // Deduplicate Slack retries (same event_id can be delivered multiple times)
+  // Slackはイベントの受信確認が取れない場合などに同じイベントを複数回送ることがあるため、event_idを記憶して重複を検出する。
   if (payload.event_id && isDuplicateEvent_(payload.event_id)) return ok_();
   if (payload.event_id) rememberEvent_(payload.event_id);
 
-  // Dispatch
+  // botに対してメンション投稿があった場合の処理
   if (event.type === "app_mention") {
     handleMention_(event);
     return ok_();
   }
 
+  // お題スレッドへの返信があった場合の処理
   if (event.type === "message") {
+    // お題スレッド内でのメンション投稿（<@...>の形式）に対して処理を行わないことでbotの二重投稿を防止する
+    if (/<@[^>]+>/.test(event.text || "")) return ok_();
     handleMessage_(event);
     return ok_();
   }
@@ -93,19 +86,23 @@ function doPost(
  * イベントの重複を検出して記憶するためのヘルパー
  */
 function isDuplicateEvent_(eventId: string): boolean {
-  const s = getProp_("SEEN_EVENT_IDS") || "";
+  const s = getProp_(PROP.SEEN_EVENT_IDS) || "";
   if (!s) return false;
   const arr = s.split(",").filter(Boolean);
   return arr.includes(eventId);
 }
 
+/**
+ * 最近受け取ったイベントIDを記憶しておく。重複イベントの検出に使用する。
+ * 最新のものから順にカンマ区切りで保存し、古いものは削除する。
+ */
 function rememberEvent_(eventId: string): void {
-  const max = Number(getProp_("SEEN_EVENT_IDS_MAX") || "50");
-  const s = getProp_("SEEN_EVENT_IDS") || "";
+  const max = Number(getProp_(PROP.SEEN_EVENT_IDS_MAX) || "50");
+  const s = getProp_(PROP.SEEN_EVENT_IDS) || "";
   const arr = s ? s.split(",").filter(Boolean) : [];
   arr.push(eventId);
 
   // keep last max
   const trimmed = arr.slice(Math.max(0, arr.length - max));
-  setProp_("SEEN_EVENT_IDS", trimmed.join(","));
+  setProp_(PROP.SEEN_EVENT_IDS, trimmed.join(","));
 }

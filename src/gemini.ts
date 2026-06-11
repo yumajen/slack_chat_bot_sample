@@ -1,21 +1,34 @@
+/**
+ * Gemini APIを呼び出してテキスト生成する関数
+ * Vertex AIのGeminiモデルを呼び出してテキスト生成を行う。
+ */
 function geminiGenerateText_(
   systemText: string,
   userText: string,
   opts: GeminiGenerateOpts = {},
 ): string {
-  const apiKey = getProp_("GEMINI_API_KEY");
-  if (!apiKey) throw new Error("GEMINI_API_KEY is missing");
+  const projectId = getProp_(PROP.GCP_PROJECT_ID);
+  if (!projectId) throw new Error("GCP_PROJECT_ID is missing");
 
-  const model =
-    opts.model || getProp_("GEMINI_MODEL") || "gemini-3-flash-preview";
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
-    model,
-  )}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const location = getProp_(PROP.VERTEX_LOCATION) || "us-central1";
 
-  const thinkingLevel: GeminiThinkingLevel =
-    opts.thinkingLevel ||
-    (getProp_("GEMINI_THINKING_LEVEL") as GeminiThinkingLevel) ||
-    "minimal";
+  const model = opts.model || getProp_(PROP.GEMINI_MODEL) || "gemini-2.5-flash";
+  const url =
+    `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}` +
+    `/locations/${location}/publishers/google/models/${encodeURIComponent(
+      model,
+    )}:generateContent`;
+
+  const thinkingBudget =
+    opts.thinkingLevel === "minimal"
+      ? 0
+      : opts.thinkingLevel === "low"
+        ? 1024
+        : opts.thinkingLevel === "medium"
+          ? 4096
+          : opts.thinkingLevel === "high"
+            ? 8192
+            : undefined;
 
   const makePayload = (maxOut: number) => ({
     contents: [
@@ -28,26 +41,10 @@ function geminiGenerateText_(
       temperature: opts.temperature ?? 0.8,
       topP: opts.topP ?? 0.9,
       maxOutputTokens: maxOut,
-      thinkingConfig: { thinkingLevel },
+      ...(thinkingBudget !== undefined && {
+        thinkingConfig: { thinkingBudget },
+      }),
     },
-    safetySettings: [
-      {
-        category: "HARM_CATEGORY_HARASSMENT",
-        threshold: "BLOCK_MEDIUM_AND_ABOVE",
-      },
-      {
-        category: "HARM_CATEGORY_HATE_SPEECH",
-        threshold: "BLOCK_MEDIUM_AND_ABOVE",
-      },
-      {
-        category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-        threshold: "BLOCK_MEDIUM_AND_ABOVE",
-      },
-      {
-        category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-        threshold: "BLOCK_MEDIUM_AND_ABOVE",
-      },
-    ],
   });
 
   type GeminiCandidate = {
@@ -62,13 +59,14 @@ function geminiGenerateText_(
     const res = UrlFetchApp.fetch(url, {
       method: "post",
       contentType: "application/json; charset=utf-8",
+      headers: {
+        Authorization: `Bearer ${ScriptApp.getOAuthToken()}`,
+      },
       payload: JSON.stringify(makePayload(maxOut)),
       muteHttpExceptions: true,
     });
 
     const body = res.getContentText();
-    setProp_("DEBUG_LAST_GEMINI", body);
-
     const data = JSON.parse(body || "{}") as GeminiResponse;
     const cand = data.candidates?.[0];
     const text = (cand?.content?.parts ?? [])
