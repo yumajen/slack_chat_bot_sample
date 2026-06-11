@@ -33,6 +33,10 @@ declare global {
     maxOutputTokens?: number;
     thinkingLevel?: GeminiThinkingLevel;
   };
+
+  type JudgeAndReplyResult =
+    | { allowed: true; reply: string }
+    | { allowed: false };
 }
 
 // これにより「このファイル自体」はモジュール扱いになるが、declare global があるので型は全体に出る
