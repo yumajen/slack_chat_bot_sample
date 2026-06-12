@@ -1,4 +1,6 @@
 "use strict";
+const FALLBACK_REPLY = "いいですね！もう少し詳しく聞いてもいいですか？🙂";
+const NG_REPLY = "⚠️このチャンネルではその話題には反応できません。雑談向けの話題でお願いします😵";
 function handleMention_(event) {
     const channel = event.channel;
     const threadTs = event.thread_ts || event.ts;
@@ -9,18 +11,14 @@ function handleMention_(event) {
         slackChatPost_(channel, "今日はどんな話題にしますか？", threadTs);
         return;
     }
-    if (!judgeTopicByGemini_(cleaned)) {
-        slackChatPost_(channel, "⚠️このチャンネルではその話題には反応できません。雑談向けの話題でお願いします😵", threadTs);
-        return;
-    }
-    let reply = "いいですね！もう少し詳しく聞いてもいいですか？🙂";
+    let result = { allowed: true, reply: FALLBACK_REPLY };
     try {
-        reply = generateReply_(cleaned);
+        result = judgeAndReply_(cleaned);
     }
     catch {
-        // keep fallback
+        // Gemini 障害時はフォールバック返信で続行（無応答にしない）
     }
-    slackChatPost_(channel, reply, threadTs);
+    slackChatPost_(channel, result.allowed ? result.reply : NG_REPLY, threadTs);
 }
 function handleMessage_(event) {
     const channel = event.channel;
@@ -40,16 +38,12 @@ function handleMessage_(event) {
     const userText = (event.text || "").trim();
     if (!userText)
         return;
-    if (!judgeTopicByGemini_(userText)) {
-        slackChatPost_(channel, "⚠️このチャンネルではその話題には反応できません。雑談向けの話題でお願いします😵", threadTs);
-        return;
-    }
-    let reply = "いいですね！もう少し詳しく聞いてもいいですか？🙂";
+    let result = { allowed: true, reply: FALLBACK_REPLY };
     try {
-        reply = generateReply_(userText);
+        result = judgeAndReply_(userText);
     }
     catch {
-        // keep fallback
+        // Gemini 障害時はフォールバック返信で続行（無応答にしない）
     }
-    slackChatPost_(channel, reply, threadTs);
+    slackChatPost_(channel, result.allowed ? result.reply : NG_REPLY, threadTs);
 }
