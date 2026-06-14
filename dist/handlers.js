@@ -1,6 +1,6 @@
 "use strict";
 const FALLBACK_REPLY = "いいですね！もう少し詳しく聞いてもいいですか？🙂";
-const NG_REPLY = "⚠️このチャンネルではその話題には反応できません。雑談向けの話題でお願いします😵";
+const NG_REPLY = "⚠️このチャンネルではその話題には反応できません😵\n雑談向けの話題でお願いします！";
 function handleMention_(event) {
     const channel = event.channel;
     const threadTs = event.thread_ts || event.ts;
