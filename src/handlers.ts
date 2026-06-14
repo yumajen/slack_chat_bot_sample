@@ -1,6 +1,6 @@
 const FALLBACK_REPLY = "いいですね！もう少し詳しく聞いてもいいですか？🙂";
 const NG_REPLY =
-  "⚠️このチャンネルではその話題には反応できません。雑談向けの話題でお願いします😵";
+  "⚠️このチャンネルではその話題には反応できません😵\n雑談向けの話題でお願いします！";
 
 function handleMention_(event: SlackEvent): void {
   const channel = event.channel;
@@ -21,11 +21,7 @@ function handleMention_(event: SlackEvent): void {
     // Gemini 障害時はフォールバック返信で続行（無応答にしない）
   }
 
-  slackChatPost_(
-    channel,
-    result.allowed ? result.reply : NG_REPLY,
-    threadTs,
-  );
+  slackChatPost_(channel, result.allowed ? result.reply : NG_REPLY, threadTs);
 }
 
 function handleMessage_(event: SlackEvent): void {
@@ -52,9 +48,5 @@ function handleMessage_(event: SlackEvent): void {
     // Gemini 障害時はフォールバック返信で続行（無応答にしない）
   }
 
-  slackChatPost_(
-    channel,
-    result.allowed ? result.reply : NG_REPLY,
-    threadTs,
-  );
+  slackChatPost_(channel, result.allowed ? result.reply : NG_REPLY, threadTs);
 }
